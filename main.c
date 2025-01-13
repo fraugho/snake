@@ -18,6 +18,9 @@
 #include <timing.h>
 #include <snake.h>
 
+//global snake
+Snake snake;
+
 int times = 0;
 long total = 0;
 long min_time = 1000000;  // 1 second in microseconds
@@ -89,7 +92,8 @@ thread_write() {
             long elapsed_us = end - start;
 
             char t_buf[100];
-            int len = snprintf(t_buf, sizeof(t_buf), "frame time taken: %ld us | render time taken: %ld us i: 0 x: %d\x1b[K\r", elapsed_us, rps, ((int*)snake.x.data)[0]);
+            int len = snprintf(t_buf, sizeof(t_buf), "frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d\x1b[K\r",
+                               elapsed_us, rps, ((int*)snake.x.data)[0], ((int*)snake.y.data)[0]);
             write(STDOUT_FILENO, t_buf, len);
 
             start = get_us();
@@ -141,10 +145,23 @@ void* thread_render() {
 /* Rendering */
 void* thread_snake_render() {
     long start = get_us();
+    static long last_move = 0;
+    static long last_render = 0;
     while(RUNNING) {
         if (screen.frames[render_index].state == RENDER) {
 
-            snake_move(screen.frames[render_index].c, &snake);
+            const long RENDER_INTERVAL = 50000;
+            const long MOVE_INTERVAL = 100000;
+            long current_time = get_us();
+            if (current_time - last_render > RENDER_INTERVAL){
+                move_snake(screen.frames[render_index].c, &snake);
+                last_render = get_us();
+                if (current_time - last_move > MOVE_INTERVAL){
+                    snake_move(&snake, last_key);
+                    last_move = get_us();
+                }
+            }
+            snake_render(screen.frames[render_index].c, &snake);
             
             screen.frames[render_index].state = IO;
             render_index = (render_index + 1) % num_frames;
@@ -174,7 +191,8 @@ int main() {
     pthread_create(&threads[1], NULL, thread_write, NULL);
     pthread_create(&threads[2], NULL, thread_clean, NULL);
 
-    while (editor_read_key() != CTRL_KEY('q')) {
+    while (last_key != CTRL_KEY('q')) {
+        last_key = editor_read_key();
     }
 
     RUNNING = false;
