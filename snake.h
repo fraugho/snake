@@ -7,86 +7,128 @@
 #include <timing.h>
 #include <screen.h>
 #include <init.h>
+#include <stdbool.h>
 
 typedef struct Snake{
-    Vec x;
-    Vec y;
+    Vec* x;
+    Vec* y;
     int vx;
     int vy;
     int size;
+    int apple_x;
+    int apple_y;
 } Snake;
-
-
-int last_key = 0;
 
 void
 snake_init(Snake* snake, int size){
-
-    snake->x.data = (char*)malloc(sizeof(int) * size);
-    snake->x.used = size;
-    snake->x.capacity = size;
+    snake->x = vec_create(size, sizeof(int));
     for(int i = 0; i < size; ++i){
-        ((int*)snake->x.data)[i] = i;
+        vec_append(snake->x, &i);
     }
-
-    snake->y.data = (char*)malloc(sizeof(int) * size);
-    snake->y.used = size;
-    snake->y.capacity = size;
+    snake->y = vec_create(size, sizeof(int));
     for(int i = 0; i < size; ++i){
-        ((int*)snake->y.data)[i] = 50;
+        int num = 50;
+        vec_append(snake->y, &num);
     }
-
     snake->vx = 2;
     snake->vy = 0;
-
+    snake->apple_x = 50;
+    snake->apple_y = 50;
     snake->size = size;
 }
 
+static int y_move = 0;
 void snake_move(Snake* snake, int key) {
     switch (key) {
         //up
         case 'w':
             snake->vx = 0;
             snake->vy = -1;
+            y_move = 1;
             break;
         //left
         case 'a':
-            snake->vx = -2;
+            snake->vx = -1;
             snake->vy = 0;
+            y_move = 0;
             break;
         //down
         case 's':
             snake->vx = 0;
             snake->vy = 1;
+            y_move = 1;
             break;
         //right
         case 'd':
-            snake->vx = 2;
+            snake->vx = 1;
             snake->vy = 0;
+            y_move = 0;
             break;
         default:
             break;
     }
 }
 
-void move_snake(char* frame, Snake* snake) {
+static int y_toggle = 1;
+void
+move_head(Snake* snake){
 
+    ((int*)snake->x->data)[0] += snake->vx;
+    ((int*)snake->y->data)[0] += snake->vy * y_toggle;
+
+    if (((int*)snake->x->data)[0] < 0){
+        ((int*)snake->x->data)[0] = screen.width;
+    }
+    if (((int*)snake->x->data)[0] > screen.width){
+        ((int*)snake->x->data)[0] = 0;
+    }
+    if (((int*)snake->y->data)[0] < 0){
+        ((int*)snake->y->data)[0] = screen.height;
+    }
+    if (((int*)snake->y->data)[0] > screen.height){
+        ((int*)snake->y->data)[0] = 0;
+    }
+    y_toggle = 1 - y_toggle;
+}
+
+void
+move_node(Snake* snake, int i){
+    ((int*)snake->y->data)[i] += snake->vy * y_toggle;
+    if (((int*)snake->y->data)[i] < 0){
+        ((int*)snake->y->data)[i] = screen.height;
+    }
+    if (((int*)snake->y->data)[i] > screen.height){
+        ((int*)snake->y->data)[i] = 0;
+    }
+}
+
+void move_snake(char* frame, Snake* snake) {
+    if (snake->apple_x == ((int*)snake->x->data)[0]){
+        if (snake->apple_y == ((int*)snake->y->data)[0]){
+            int num = 0;
+            vec_append(snake->x, &num);
+            vec_append(snake->y, &num);
+            snake->apple_x = rand() % screen.width;
+            snake->apple_y = rand() % screen.height;
+            ++snake->size;
+        }
+    }
     //snake_move(snake, last_key);
     // Store old head position
-    int prev_x = ((int*)snake->x.data)[0];
-    int prev_y = ((int*)snake->y.data)[0];
+    int prev_x = ((int*)snake->x->data)[0];
+    int prev_y = ((int*)snake->y->data)[0];
 
     // Move head first
-    ((int*)snake->x.data)[0] += snake->vx;
-    ((int*)snake->y.data)[0] += snake->vy;
+    move_head(snake);
 
     // Move rest of body - each segment takes previous segment's position
-    for(int i = 1; i < snake->x.used; ++i) {
-        int temp = ((int*)snake->x.data)[i];
-        ((int*)snake->x.data)[i] = prev_x;
+    for(int i = 1; i < snake->size; ++i) {
+        int temp = ((int*)snake->x->data)[i];
+        ((int*)snake->x->data)[i] = prev_x;
         prev_x = temp;
-        temp = ((int*)snake->y.data)[i];
-        ((int*)snake->y.data)[i] = prev_y;
+
+        temp = ((int*)snake->y->data)[i];
+        ((int*)snake->y->data)[i] = prev_y;
         prev_y = temp;
     }
 }
@@ -94,46 +136,14 @@ void move_snake(char* frame, Snake* snake) {
 void snake_render(char* frame, Snake* snake) {
     int center_y = screen.height / 2;
     // Draw snake
-    for(int i = 0; i < snake->x.used; ++i) {
-        frame[((int*)snake->x.data)[i] % screen.width + ((int*)snake->y.data)[i] * (screen.width + 5) + 3] = '#';
+    for(int i = 0; i < snake->size; ++i) {
+        frame[((int*)snake->x->data)[i] + ((int*)snake->y->data)[i] * (screen.width + 5) + 3] = 'o';
     }
 }
 
-void snake_render_(char* frame, Snake* snake) {
+void apple_render(char* frame, Snake* snake) {
     int center_y = screen.height / 2;
-    static long last_move_time = 0;  // Track last movement time
-    long current_time = get_ms();
-    
-    // Move every 100ms (0.1 seconds)
-    // This means it'll take 1 second to move 10 spaces
-    const long MOVE_INTERVAL = 30;
-    
-    // Only move if enough time has passed
-    if (current_time - last_move_time >= MOVE_INTERVAL) {
-        // Store old head position
-        int prev_x = ((int*)snake->x.data)[0];
-        int prev_y = ((int*)snake->y.data)[0];
-        
-        // Move head first
-        ++((int*)snake->x.data)[0];
-        
-        // Move rest of body - each segment takes previous segment's position
-        for(int i = 1; i < snake->x.used; ++i) {
-            int temp = ((int*)snake->x.data)[i];
-            ((int*)snake->x.data)[i] = prev_x;
-            prev_x = temp;
-            temp = ((int*)snake->y.data)[i];
-            ((int*)snake->y.data)[i] = prev_y;
-            prev_y = temp;
-        }
-        
-        last_move_time = current_time;
-    }
-
-    // Draw snake
-    for(int i = 0; i < snake->x.used; ++i) {
-        frame[((int*)snake->x.data)[i] % screen.width + ((int*)snake->y.data)[i] * (screen.width + 5) + 3] = '#';
-    }
+    frame[snake->apple_x + snake->apple_y * (screen.width + 5) + 3] = '*';
 }
 
 #endif
