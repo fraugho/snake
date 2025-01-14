@@ -50,6 +50,20 @@ vec_insert(Vec *vec, void* thing, int32_t index){
     }
 }
 
+Vec* vec_create(size_t initial_capacity, size_t type_size) {
+    Vec* vec = (Vec*)malloc(sizeof(Vec));
+    if (!vec) return NULL;
+    vec->capacity = initial_capacity;
+    vec->used = 0;
+    vec->type_size = type_size;
+    vec->data = (char*)malloc(initial_capacity * type_size);
+    if (!vec->data) {
+        free(vec);
+        return NULL;
+    }
+    return vec;
+}
+
 void
 vec_delete(Vec *vec, int32_t index){
     if (vec->used | 0){
