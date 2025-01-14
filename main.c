@@ -94,7 +94,7 @@ thread_write() {
 
             char t_buf[100];
             int len = snprintf(t_buf, sizeof(t_buf), "frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %d\x1b[K\r",
-                               elapsed_us, rps, ((int*)snake.x->data)[0], ((int*)snake.y->data)[0], snake.x->capacity);
+                               elapsed_us, rps, ((int*)snake.x->data)[1], ((int*)snake.y->data)[1], snake.x->capacity);
             write(STDOUT_FILENO, t_buf, len);
 
             start = get_us();
