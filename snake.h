@@ -136,13 +136,14 @@ void snake_render(char* frame, Snake* snake) {
     int center_y = screen.height / 2;
     // Draw snake
     for(int i = 0; i < snake->size; ++i) {
-        frame[((int*)snake->x->data)[i] + ((int*)snake->y->data)[i] * (screen.width + 5) + 3] = '#';
+        draw_pixel(((int*)snake->x->data)[i], ((int*)snake->y->data)[i], '#', frame);
     }
+    draw_pixel(0, screen.height, '#', frame);
 }
 
 void apple_render(char* frame, Snake* snake) {
     int center_y = screen.height / 2;
-    frame[snake->apple_x + snake->apple_y * (screen.width + 5) + 3] = '*';
+    draw_pixel(snake->apple_x, snake->apple_y, '*', frame);
 }
 
 #endif

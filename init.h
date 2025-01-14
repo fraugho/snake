@@ -13,6 +13,8 @@
 #include <pthread.h>
 #include <stdatomic.h>
 
+bool debug = true;
+
 /* Terminal handling */
 void die(const char *c) {
     write(STDOUT_FILENO, "\x1b[2J", 4);  // Clear screen
