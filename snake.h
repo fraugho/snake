@@ -30,7 +30,7 @@ snake_init(Snake* snake, int size){
         int num = 50;
         vec_append(snake->y, &num);
     }
-    snake->vx = 2;
+    snake->vx = 1;
     snake->vy = 0;
     snake->apple_x = 50;
     snake->apple_y = 50;
@@ -76,6 +76,7 @@ move_head(Snake* snake){
     ((int*)snake->x->data)[0] += snake->vx;
     ((int*)snake->y->data)[0] += snake->vy * y_toggle;
 
+    // Wrap around the screen
     if (((int*)snake->x->data)[0] < 0){
         ((int*)snake->x->data)[0] = screen.width;
     }
@@ -88,18 +89,7 @@ move_head(Snake* snake){
     if (((int*)snake->y->data)[0] > screen.height){
         ((int*)snake->y->data)[0] = 0;
     }
-    y_toggle = 1 - y_toggle;
-}
 
-void
-move_node(Snake* snake, int i){
-    ((int*)snake->y->data)[i] += snake->vy * y_toggle;
-    if (((int*)snake->y->data)[i] < 0){
-        ((int*)snake->y->data)[i] = screen.height;
-    }
-    if (((int*)snake->y->data)[i] > screen.height){
-        ((int*)snake->y->data)[i] = 0;
-    }
 }
 
 void move_snake(char* frame, Snake* snake) {
@@ -113,6 +103,7 @@ void move_snake(char* frame, Snake* snake) {
             ++snake->size;
         }
     }
+
     //snake_move(snake, last_key);
     // Store old head position
     int prev_x = ((int*)snake->x->data)[0];
@@ -121,15 +112,23 @@ void move_snake(char* frame, Snake* snake) {
     // Move head first
     move_head(snake);
 
-    // Move rest of body - each segment takes previous segment's position
-    for(int i = 1; i < snake->size; ++i) {
-        int temp = ((int*)snake->x->data)[i];
-        ((int*)snake->x->data)[i] = prev_x;
-        prev_x = temp;
+    if (y_toggle){
+        // Move rest of body - each segment takes previous segment's position
+        for(int i = 1; i < snake->size; ++i) {
+            int temp = ((int*)snake->x->data)[i];
+            ((int*)snake->x->data)[i] = prev_x;
+            prev_x = temp;
 
-        temp = ((int*)snake->y->data)[i];
-        ((int*)snake->y->data)[i] = prev_y;
-        prev_y = temp;
+            temp = ((int*)snake->y->data)[i];
+            ((int*)snake->y->data)[i] = prev_y;
+            prev_y = temp;
+        }
+    }
+
+
+    // Toggle y movement based on terminal cell proportions
+    if (y_move){
+        y_toggle = 1 - y_toggle;
     }
 }
 
@@ -137,7 +136,7 @@ void snake_render(char* frame, Snake* snake) {
     int center_y = screen.height / 2;
     // Draw snake
     for(int i = 0; i < snake->size; ++i) {
-        frame[((int*)snake->x->data)[i] + ((int*)snake->y->data)[i] * (screen.width + 5) + 3] = 'o';
+        frame[((int*)snake->x->data)[i] + ((int*)snake->y->data)[i] * (screen.width + 5) + 3] = '#';
     }
 }
 
