@@ -1,13 +1,11 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include <unistd.h>
 #include <termios.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
-#include <stdbool.h>
+
 #include <init.h>
 #include <timing.h>
 #include <buffer.h>
@@ -23,7 +21,7 @@ typedef struct Screen {
 struct Screen screen;
 int num_frames = 10;
 
-void clear_frame_buf(struct Buffer* frame){
+void clear_frame_buf(Buffer* frame){
     // For each line we need:
     // - screen.width characters
     // - \x1b[K\r\n (5 bytes) for clear line and newline
@@ -41,13 +39,14 @@ void clear_frame_buf(struct Buffer* frame){
     }
 }
 
-void draw_pixel(int x, int y, char c, char* frame){
-    frame[x + y * (screen.width + 5 + 4) + 3] = c;
+static inline void draw_pixel(int x, int y, char c, char* frame){
+    frame[x + (y * (screen.width + 5 + 4)) + 3 + 5] = c;
 }
 
 void screen_init() {
-    if (get_window_size(&screen.height, &screen.width) == -1) 
+    if (get_window_size(&screen.height, &screen.width) == -1){
         die("get_window_size");
+    }
 
     screen.height -= debug;
 
@@ -62,17 +61,15 @@ void screen_init() {
 
     for (int i = 0; i < num_frames; i++){
         screen.frames[i].c = (char*)malloc(total_size);
-        screen.frames[i].len = total_size;
         clear_frame_buf(&screen.frames[i]);
-        screen.frames[i].used = total_size;
+        screen.frames[i].len = total_size;
         screen.frames[i].state = RENDER;
     }
 
     screen.start_time = get_ms();
 }
 
-void
-free_screen(){
+static inline void free_screen(){
     for(int i = 0; i < num_frames; ++i){
         buf_free(&screen.frames[i]);
     }

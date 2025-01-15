@@ -1,17 +1,8 @@
 #ifndef TIMING_H
 #define TIMING_H
 
-#include <unistd.h>
-#include <termios.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <string.h>
 #include <time.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <stdatomic.h>
+
 /* Timing utilities */
 static inline long get_ms() {
     struct timespec spec;

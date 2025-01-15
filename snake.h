@@ -1,13 +1,16 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <vec.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
+
 #include <timing.h>
 #include <screen.h>
 #include <init.h>
-#include <stdbool.h>
+#include <vec.h>
+
+const uint8_t INIT_SIZE = 5;
 
 typedef struct Snake{
     Vec* x;
@@ -20,24 +23,27 @@ typedef struct Snake{
 } Snake;
 
 void
-snake_init(Snake* snake, int size){
-    snake->x = vec_create(size, sizeof(int));
-    for(int i = 0; i < size; ++i){
+snake_init(Snake* snake){
+    snake->size = INIT_SIZE;
+
+    snake->vx = 1;
+    snake->vy = 0;
+
+    snake->x = vec_create(INIT_SIZE, sizeof(int));
+    for(int i = 0; i < INIT_SIZE; ++i){
         vec_append(snake->x, &i);
     }
-    snake->y = vec_create(size, sizeof(int));
-    for(int i = 0; i < size; ++i){
+
+    snake->y = vec_create(INIT_SIZE, sizeof(int));
+    for(int i = 0; i < INIT_SIZE; ++i){
         int num = 50;
         vec_append(snake->y, &num);
     }
-    snake->vx = 1;
-    snake->vy = 0;
     snake->apple_x = 50;
     snake->apple_y = 50;
-    snake->size = size;
 }
 
-static int y_move = 0;
+static uint8_t y_move = 0;
 void snake_move(Snake* snake, int key) {
     switch (key) {
         //up
@@ -69,7 +75,7 @@ void snake_move(Snake* snake, int key) {
     }
 }
 
-static int y_toggle = 1;
+static uint8_t y_toggle = 1;
 void
 move_head(Snake* snake){
 
@@ -78,9 +84,9 @@ move_head(Snake* snake){
 
     // Wrap around the screen
     if (((int*)snake->x->data)[0] < 0){
-        ((int*)snake->x->data)[0] = screen.width;
+        ((int*)snake->x->data)[0] = screen.width - 1;
     }
-    if (((int*)snake->x->data)[0] > screen.width){
+    if (((int*)snake->x->data)[0] == screen.width){
         ((int*)snake->x->data)[0] = 0;
     }
     if (((int*)snake->y->data)[0] < 0){
@@ -89,22 +95,23 @@ move_head(Snake* snake){
     if (((int*)snake->y->data)[0] > screen.height){
         ((int*)snake->y->data)[0] = 0;
     }
-
 }
 
 void move_snake(char* frame, Snake* snake) {
     if (snake->apple_x == ((int*)snake->x->data)[0]){
         if (snake->apple_y == ((int*)snake->y->data)[0]){
             int num = 0;
+            //adds body cell
             vec_append(snake->x, &num);
             vec_append(snake->y, &num);
+            ++snake->size;
+
+            //changes apple position
             snake->apple_x = rand() % screen.width;
             snake->apple_y = rand() % screen.height;
-            ++snake->size;
         }
     }
 
-    //snake_move(snake, last_key);
     // Store old head position
     int prev_x = ((int*)snake->x->data)[0];
     int prev_y = ((int*)snake->y->data)[0];
@@ -125,20 +132,15 @@ void move_snake(char* frame, Snake* snake) {
         }
     }
 
-
     // Toggle y movement based on terminal cell proportions
-    if (y_move){
-        y_toggle = 1 - y_toggle;
-    }
+    y_toggle = y_move ? 1 - y_toggle : y_toggle;
 }
 
+// Draw snake
 void snake_render(char* frame, Snake* snake) {
-    int center_y = screen.height / 2;
-    // Draw snake
     for(int i = 0; i < snake->size; ++i) {
         draw_pixel(((int*)snake->x->data)[i], ((int*)snake->y->data)[i], '#', frame);
     }
-    draw_pixel(0, screen.height, '#', frame);
 }
 
 void apple_render(char* frame, Snake* snake) {

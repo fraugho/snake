@@ -7,13 +7,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#include <string.h>
-#include <time.h>
-#include <stdbool.h>
-#include <pthread.h>
-#include <stdatomic.h>
 
-bool debug = true;
+bool debug = false;
 
 /* Terminal handling */
 void die(const char *c) {

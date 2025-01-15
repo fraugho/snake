@@ -11,7 +11,6 @@
 #include <time.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <stdatomic.h>
 //mine
 #include <init.h>
 #include <screen.h>
@@ -84,7 +83,7 @@ thread_write() {
     long start = get_us();
     while(RUNNING){
         if (screen.frames[io_index].state == IO){
-            write(STDOUT_FILENO, screen.frames[io_index].c, screen.frames[io_index].used);
+            write(STDOUT_FILENO, screen.frames[io_index].c, screen.frames[io_index].len);
             screen.frames[io_index].state = CLEAN;
             io_index = (io_index + 1) % num_frames;
 
@@ -105,41 +104,6 @@ thread_write() {
 
             if (elapsed_us < min_time) min_time = elapsed_us;
             if (elapsed_us > max_time) max_time = elapsed_us;
-        }
-    }
-    return NULL;
-}
-
-/* Rendering */
-void* thread_render() {
-    long start = get_us();
-    while(RUNNING) {
-        if (screen.frames[render_index].state == RENDER) {
-            int center_x = screen.width / 2;
-            int center_y = screen.height / 2;
-            
-            long current_time = get_ms();
-            float elapsed = (current_time - screen.start_time) / 1000.0f;  // In seconds
-            
-            // Pixels per second - adjust this number to control speed
-            float pixels_per_second = screen.width / 5.0f;  // Cross screen in 2 seconds
-            
-            // Calculate position and wrap around screen width
-            int position = (int)(elapsed * pixels_per_second) % screen.width;
-            
-            // Draw at calculated position
-            screen.frames[render_index].c[position + center_y * (screen.width + 5) + 3] = '#';
-            
-            screen.frames[render_index].state = IO;
-            render_index = (render_index + 1) % num_frames;
-            times++;
-
-            long end = get_us();
-            rps = end - start;
-
-            start = get_us();
-            // Frame Timing
-            //usleep(8333); // 8.333ms = 1/120th of a second
         }
     }
     return NULL;
@@ -177,8 +141,6 @@ void* thread_snake_render() {
             rps = end - start;
 
             start = get_us();
-            // Frame Timing
-            //usleep(8333); // 8.333ms = 1/120th of a second
         }
     }
     return NULL;
@@ -187,7 +149,7 @@ void* thread_snake_render() {
 /* Main entry point */
 int main() {
     screen_init();
-    snake_init(&snake, 5);
+    snake_init(&snake);
     enable_raw_mode();
 
     long cpu_num = sysconf(_SC_NPROCESSORS_ONLN);
