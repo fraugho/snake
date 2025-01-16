@@ -93,7 +93,7 @@ thread_write() {
 
             if(debug){
                 char t_buf[100];
-                int len = snprintf(t_buf, sizeof(t_buf), "\x1b[K\r frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %d\x1b[K\r",
+                int len = snprintf(t_buf, sizeof(t_buf), "\x1b[K\r frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %zu\x1b[K\r",
                                    elapsed_us, rps, ((int*)snake.x->data)[1], ((int*)snake.y->data)[1], snake.x->capacity);
                 write(STDOUT_FILENO, t_buf, len);
             }
@@ -130,8 +130,8 @@ void* thread_snake_render() {
                 }
             }
 
-            snake_render(screen.frames[render_index].c, &snake);
-            apple_render(screen.frames[render_index].c, &snake);
+            snake_render(screen.frames[render_index].c, snake);
+            apple_render(screen.frames[render_index].c, snake);
 
             screen.frames[render_index].state = IO;
             render_index = (render_index + 1) % num_frames;
@@ -180,5 +180,6 @@ int main() {
     disable_raw_mode();
 
     free_screen();
+    free_snake(&snake);
     return 0;
 }

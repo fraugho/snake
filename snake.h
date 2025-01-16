@@ -137,15 +137,20 @@ void move_snake(char* frame, Snake* snake) {
 }
 
 // Draw snake
-void snake_render(char* frame, Snake* snake) {
-    for(int i = 0; i < snake->size; ++i) {
-        draw_pixel(((int*)snake->x->data)[i], ((int*)snake->y->data)[i], '#', frame);
+void snake_render(char* frame, const Snake snake) {
+    for(int i = 0; i < snake.size; ++i) {
+        draw_pixel(((int*)snake.x->data)[i], ((int*)snake.y->data)[i], '#', frame);
     }
 }
 
-void apple_render(char* frame, Snake* snake) {
+void apple_render(char* frame, const Snake snake) {
     int center_y = screen.height / 2;
-    draw_pixel(snake->apple_x, snake->apple_y, '*', frame);
+    draw_pixel(snake.apple_x, snake.apple_y, '*', frame);
+}
+
+void free_snake(Snake* snake){
+    free_vec(snake->x);
+    free_vec(snake->y);
 }
 
 #endif
