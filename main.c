@@ -1,5 +1,3 @@
-/* Terminator - A simple terminal graphics system */
-
 /* Standard includes */
 #include <unistd.h>
 #include <termios.h>
@@ -11,7 +9,6 @@
 #include <time.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <stdatomic.h>
 //mine
 #include <init.h>
 #include <screen.h>
@@ -26,7 +23,6 @@ int times = 0;
 long total = 0;
 long min_time = 1000000;  // 1 second in microseconds
 long max_time = 0;
-
 
 /* Constants and macros */
 #define true 1
@@ -84,7 +80,7 @@ thread_write() {
     long start = get_us();
     while(RUNNING){
         if (screen.frames[io_index].state == IO){
-            write(STDOUT_FILENO, screen.frames[io_index].c, screen.frames[io_index].used);
+            write(STDOUT_FILENO, screen.frames[io_index].c, screen.frames[io_index].len);
             screen.frames[io_index].state = CLEAN;
             io_index = (io_index + 1) % num_frames;
 
@@ -94,7 +90,7 @@ thread_write() {
 
             if(debug){
                 char t_buf[100];
-                int len = snprintf(t_buf, sizeof(t_buf), "\x1b[K\r frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %d\x1b[K\r",
+                int len = snprintf(t_buf, sizeof(t_buf), "\x1b[K\r frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %zu\x1b[K\r",
                                    elapsed_us, rps, ((int*)snake.x->data)[1], ((int*)snake.y->data)[1], snake.x->capacity);
                 write(STDOUT_FILENO, t_buf, len);
             }
@@ -105,41 +101,6 @@ thread_write() {
 
             if (elapsed_us < min_time) min_time = elapsed_us;
             if (elapsed_us > max_time) max_time = elapsed_us;
-        }
-    }
-    return NULL;
-}
-
-/* Rendering */
-void* thread_render() {
-    long start = get_us();
-    while(RUNNING) {
-        if (screen.frames[render_index].state == RENDER) {
-            int center_x = screen.width / 2;
-            int center_y = screen.height / 2;
-            
-            long current_time = get_ms();
-            float elapsed = (current_time - screen.start_time) / 1000.0f;  // In seconds
-            
-            // Pixels per second - adjust this number to control speed
-            float pixels_per_second = screen.width / 5.0f;  // Cross screen in 2 seconds
-            
-            // Calculate position and wrap around screen width
-            int position = (int)(elapsed * pixels_per_second) % screen.width;
-            
-            // Draw at calculated position
-            screen.frames[render_index].c[position + center_y * (screen.width + 5) + 3] = '#';
-            
-            screen.frames[render_index].state = IO;
-            render_index = (render_index + 1) % num_frames;
-            times++;
-
-            long end = get_us();
-            rps = end - start;
-
-            start = get_us();
-            // Frame Timing
-            //usleep(8333); // 8.333ms = 1/120th of a second
         }
     }
     return NULL;
@@ -177,8 +138,6 @@ void* thread_snake_render() {
             rps = end - start;
 
             start = get_us();
-            // Frame Timing
-            //usleep(8333); // 8.333ms = 1/120th of a second
         }
     }
     return NULL;
@@ -187,7 +146,7 @@ void* thread_snake_render() {
 /* Main entry point */
 int main() {
     screen_init();
-    snake_init(&snake, 5);
+    snake_init(&snake);
     enable_raw_mode();
 
     long cpu_num = sysconf(_SC_NPROCESSORS_ONLN);
@@ -218,5 +177,6 @@ int main() {
     disable_raw_mode();
 
     free_screen();
+    free_snake(&snake);
     return 0;
 }
