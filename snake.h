@@ -22,8 +22,7 @@ typedef struct Snake{
     int apple_y;
 } Snake;
 
-void
-snake_init(Snake* snake){
+void snake_init(Snake* snake){
     snake->size = INIT_SIZE;
 
     snake->vx = 1;
@@ -76,8 +75,7 @@ void snake_move(Snake* snake, int key) {
 }
 
 static uint8_t y_toggle = 1;
-void
-move_head(Snake* snake){
+void move_head(Snake* snake){
 
     ((int*)snake->x->data)[0] += snake->vx;
     ((int*)snake->y->data)[0] += snake->vy * y_toggle;
@@ -137,15 +135,15 @@ void move_snake(char* frame, Snake* snake) {
 }
 
 // Draw snake
-void snake_render(char* frame, const Snake snake) {
-    for(int i = 0; i < snake.size; ++i) {
-        draw_pixel(((int*)snake.x->data)[i], ((int*)snake.y->data)[i], '#', frame);
+void snake_render(char* frame, const Snake* snake) {
+    for(int i = 0; i < snake->size; ++i) {
+        draw_pixel(((int*)snake->x->data)[i], ((int*)snake->y->data)[i], '#', frame);
     }
 }
 
-void apple_render(char* frame, const Snake snake) {
+void apple_render(char* frame, const Snake* snake) {
     int center_y = screen.height / 2;
-    draw_pixel(snake.apple_x, snake.apple_y, '*', frame);
+    draw_pixel(snake->apple_x, snake->apple_y, '*', frame);
 }
 
 void free_snake(Snake* snake){

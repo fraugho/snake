@@ -1,5 +1,3 @@
-/* Terminator - A simple terminal graphics system */
-
 /* Standard includes */
 #include <unistd.h>
 #include <termios.h>
@@ -25,7 +23,6 @@ int times = 0;
 long total = 0;
 long min_time = 1000000;  // 1 second in microseconds
 long max_time = 0;
-
 
 /* Constants and macros */
 #define true 1
@@ -130,8 +127,8 @@ void* thread_snake_render() {
                 }
             }
 
-            snake_render(screen.frames[render_index].c, snake);
-            apple_render(screen.frames[render_index].c, snake);
+            snake_render(screen.frames[render_index].c, &snake);
+            apple_render(screen.frames[render_index].c, &snake);
 
             screen.frames[render_index].state = IO;
             render_index = (render_index + 1) % num_frames;
