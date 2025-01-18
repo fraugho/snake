@@ -34,7 +34,7 @@ void screen_init() {
 
     // Hide cursor
     write(STDOUT_FILENO, "\x1b[?25l", 6); 
-    
+
     // Initialize both buffers
 
     screen.frames = (Buffer*)malloc(sizeof(Buffer) * num_frames);

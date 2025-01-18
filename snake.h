@@ -22,8 +22,7 @@ typedef struct Snake{
     int apple_y;
 } Snake;
 
-void
-snake_init(Snake* snake){
+void snake_init(Snake* snake){
     snake->size = INIT_SIZE;
 
     snake->vx = 1;
@@ -75,11 +74,10 @@ void snake_move(Snake* snake, int key) {
     }
 }
 
-static uint8_t y_toggle = 1;
 void move_head(Snake* snake){
 
     ((int*)snake->x->data)[0] += snake->vx;
-    ((int*)snake->y->data)[0] += snake->vy * y_toggle;
+    ((int*)snake->y->data)[0] += snake->vy;
 
     // Wrap around the screen
     if (((int*)snake->x->data)[0] < 0){
@@ -96,7 +94,7 @@ void move_head(Snake* snake){
     }
 }
 
-void move_snake(Snake* snake) {
+static inline void apple_logic(Snake* snake){
     if (snake->apple_x == ((int*)snake->x->data)[0]){
         if (snake->apple_y == ((int*)snake->y->data)[0]){
             int num = 0;
@@ -110,6 +108,10 @@ void move_snake(Snake* snake) {
             snake->apple_y = rand() % screen.height;
         }
     }
+}
+
+void move_snake(Snake* snake) {
+    apple_logic(snake);
 
     // Store old head position
     int prev_x = ((int*)snake->x->data)[0];
@@ -118,21 +120,16 @@ void move_snake(Snake* snake) {
     // Move head first
     move_head(snake);
 
-    if (y_toggle){
-        // Move rest of body - each segment takes previous segment's position
-        for(int i = 1; i < snake->size; ++i) {
-            int temp = ((int*)snake->x->data)[i];
-            ((int*)snake->x->data)[i] = prev_x;
-            prev_x = temp;
+    // Move rest of body - each segment takes previous segment's position
+    for(int i = 1; i < snake->size; ++i) {
+        int temp = ((int*)snake->x->data)[i];
+        ((int*)snake->x->data)[i] = prev_x;
+        prev_x = temp;
 
-            temp = ((int*)snake->y->data)[i];
-            ((int*)snake->y->data)[i] = prev_y;
-            prev_y = temp;
-        }
+        temp = ((int*)snake->y->data)[i];
+        ((int*)snake->y->data)[i] = prev_y;
+        prev_y = temp;
     }
-
-    // Toggle y movement based on terminal cell proportions
-    y_toggle = y_move ? 1 - y_toggle : y_toggle;
 }
 
 // Draw snake
