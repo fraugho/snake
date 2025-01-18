@@ -2,7 +2,9 @@
 #define INPUT_H
 
 #include <unistd.h>
-#include <init.h>
+
+#include "init.h"
+
 
 int last_key = 0;
 

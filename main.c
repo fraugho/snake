@@ -1,35 +1,25 @@
 /* Terminator - A simple terminal graphics system */
-
 /* Standard includes */
-#include <unistd.h>
-#include <termios.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include <sys/ioctl.h>
 #include <string.h>
-#include <time.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdint.h>
 //mine
-#include <init.h>
-#include <screen.h>
-#include <timing.h>
-#include <snake.h>
-#include <input.h>
-
-//global snake
-Snake snake;
+#include "timing.h"
+#include "screen.h"
+#include "init.h"
+#include "input.h"
+#include "snake.h"
 
 int times = 0;
-long total = 0;
-long min_time = 1000000;  // 1 second in microseconds
-long max_time = 0;
-
+int64_t total = 0;
+int64_t min_time = INT64_MAX;  // Initialize to maximum possible value
+int64_t max_time = 0;
 
 /* Constants and macros */
-#define true 1
-#define false 0
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 bool RUNNING = true;
@@ -37,6 +27,9 @@ bool RUNNING = true;
 int io_index = 0;
 int render_index = 0;
 int clean_index = 0;
+
+//global snake
+Snake snake;
 
 /* Buffer operations */
 #define BUFFER_INIT {NULL, 0}
@@ -63,82 +56,67 @@ void enable_raw_mode() {
         die("tcsetattr");
 }
 
-/* Cleaning */
-void*
-thread_clean(){
-    while(RUNNING){
-        if (screen.frames[clean_index].state == CLEAN){
-            clear_frame_buf(&screen.frames[clean_index]);
-            screen.frames[clean_index].state = RENDER;
-            clean_index = (clean_index + 1) % num_frames;
-        }
-    }
-    return NULL;
-}
+int64_t rps = 0;
+int64_t main_start = 0;
 
-long rps = 0;
 /* Writing */
-void*
-thread_write() {
-    long start = get_us();
-    while(RUNNING){
-        if (screen.frames[io_index].state == IO){
-            write(STDOUT_FILENO, screen.frames[io_index].c, screen.frames[io_index].len);
-            screen.frames[io_index].state = CLEAN;
+// In thread_write():
+void* thread_write() {
+    int64_t start = get_ns();
+    main_start = start;
+    while(RUNNING) {
+        if (screen.frames[io_index].state == IO) {
+            if (screen.frames[io_index].used != 0) {
+                write_to_terminal(&screen.frames[io_index]);
+            }
+            screen.frames[io_index].used = 0;
+            screen.frames[io_index].state = RENDER;
             io_index = (io_index + 1) % num_frames;
 
-            // Calculate and display timing
-            long end = get_us();
-            long elapsed_us = end - start;
+            int64_t current = get_ns();
+            int64_t elapsed_ns = time_diff_ns(start, current);
 
-            if(debug){
-                char t_buf[100];
-                int len = snprintf(t_buf, sizeof(t_buf), "\x1b[K\r frame time taken: %ld us | render time taken: %ld us i: 0 x: %d y: %d size: %zu\x1b[K\r",
-                                   elapsed_us, rps, ((int*)snake.x->data)[1], ((int*)snake.y->data)[1], snake.x->capacity);
-                write(STDOUT_FILENO, t_buf, len);
+            if (elapsed_ns > 0) {
+                total += elapsed_ns;
+                min_time = (elapsed_ns < min_time) ? elapsed_ns : min_time;
+                max_time = (elapsed_ns > max_time) ? elapsed_ns : max_time;
+                ++times;
             }
 
-            start = get_us();
-
-            total += elapsed_us;
-
-            if (elapsed_us < min_time) min_time = elapsed_us;
-            if (elapsed_us > max_time) max_time = elapsed_us;
+            start = get_ns();
         }
     }
     return NULL;
 }
 
 /* Rendering */
-void* thread_snake_render() {
-    long start = get_us();
-    static long last_move = 0;
-    static long last_render = 0;
+void* thread_render() {
+    int64_t start = get_us();
+    static int64_t last_move = 0;
+    static int64_t last_render = 0;
     while(RUNNING) {
         if (screen.frames[render_index].state == RENDER) {
+            const int64_t RENDER_INTERVAL = 50000;
+            const int64_t MOVE_INTERVAL = 100000;
+            int64_t current_time = get_us();
 
-            const long RENDER_INTERVAL = 50000;
-            const long MOVE_INTERVAL = 100000;
-            long current_time = get_us();
-
-            if (current_time - last_render > RENDER_INTERVAL){
-                move_snake(screen.frames[render_index].c, &snake);
+            if (current_time - last_render > RENDER_INTERVAL) {
+                snake_clean(&screen.frames[render_index], &snake);
+                move_snake(&snake);
                 last_render = get_us();
-                if (current_time - last_move > MOVE_INTERVAL){
+                if (current_time - last_move > MOVE_INTERVAL) {
                     snake_move(&snake, last_key);
                     last_move = get_us();
                 }
+                snake_render(&screen.frames[render_index], &snake);
+                apple_render(&screen.frames[render_index], &snake);
             }
-
-            snake_render(screen.frames[render_index].c, snake);
-            apple_render(screen.frames[render_index].c, snake);
 
             screen.frames[render_index].state = IO;
             render_index = (render_index + 1) % num_frames;
-            times++;
 
-            long end = get_us();
-            rps = end - start;
+            int64_t end = get_us();
+            rps = time_diff_us(start, end);
 
             start = get_us();
         }
@@ -152,16 +130,18 @@ int main() {
     snake_init(&snake);
     enable_raw_mode();
 
+    draw_blank();
+
     long cpu_num = sysconf(_SC_NPROCESSORS_ONLN);
     pthread_t threads[cpu_num];
 
-    pthread_create(&threads[0], NULL, thread_snake_render, NULL);
+    pthread_create(&threads[0], NULL, thread_render, NULL);
     pthread_create(&threads[1], NULL, thread_write, NULL);
-    pthread_create(&threads[2], NULL, thread_clean, NULL);
 
     while (last_key != CTRL_KEY('q')) {
         last_key = editor_read_key();
     }
+    int64_t elasped = get_ns();
 
     RUNNING = false;
 
@@ -169,17 +149,20 @@ int main() {
         pthread_join(threads[i], NULL);
     }
 
-    printf("\nPerformance Stats:\n\r");
-    printf("Average frame time: %ld us (%.2f FPS)\n\r",
-           total / times, 1000000.0 / (total / (float)times));
-    printf("Best frame time: %ld us (%.2f FPS)\n\r", 
-           min_time, 1000000.0 / min_time);
-    printf("Worst frame time: %ld us (%.2f FPS)", 
-           max_time, 1000000.0 / max_time);
-    
-    disable_raw_mode();
+    printf("\n\r\x1b[K");
+    printf("Performance Stats:\n\x1b[K\r");
 
+    if (times > 0) {
+        double avg_time = total / (double)times;
+        //avg_time = (elasped - main_start) / (double)times;
+        printf("Average frame time: %.2f ns (%.2f FPS)\n\x1b[K\r",
+               avg_time, ns_to_fps(avg_time));
+        printf("Best frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
+               min_time, ns_to_fps(min_time));
+        printf("Worst frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
+               max_time, ns_to_fps(max_time));
+    }
+    disable_raw_mode();
     free_screen();
-    free_snake(&snake);
     return 0;
 }

@@ -4,44 +4,26 @@
 #include <termios.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 
-#include <init.h>
-#include <timing.h>
-#include <buffer.h>
+#include "init.h"
+#include "timing.h"
+#include "buffer.h"
 
 typedef struct Screen {
-    int width, height;
     struct termios og_termios;
     Buffer* frames;
-    long start_time;
+    uint16_t width, height;
+    bool running;
 } Screen;
 
 /* Global state */
 struct Screen screen;
 int num_frames = 10;
+const size_t BUF_SIZE = 8000;
 
-void clear_frame_buf(Buffer* frame){
-    // For each line we need:
-    // - screen.width characters
-    // - \x1b[K\r\n (5 bytes) for clear line and newline
-    int line_size = screen.width + 5 + 4;
-    int total_size = 3 + (line_size * screen.height);  // 3 for initial \x1b[H
-    
-    memset(frame->c, ' ', total_size);
-    memcpy(frame->c, "\x1b[H", 3);
-
-    // Copy the formatted line screen.height times
-    for (int i = 0; i < screen.height; i++) {
-        //memcpy(&buf->c[3 + screen.width + i * (line_size)], " ", 1);
-        memcpy(&frame->c[3 + i * line_size ], "\x1b[2K\r", 5);
-        memcpy(&frame->c[3 + ((i + 1) * line_size) - 4],"\x1b[1B", 4);
-    }
-}
-
-static inline void draw_pixel(int x, int y, char c, char* frame){
-    frame[x + (y * (screen.width + 5 + 4)) + 3 + 5] = c;
-}
 
 void screen_init() {
     if (get_window_size(&screen.height, &screen.width) == -1){
@@ -54,19 +36,61 @@ void screen_init() {
     write(STDOUT_FILENO, "\x1b[?25l", 6); 
     
     // Initialize both buffers
-    int line_size = screen.width + 5 + 4;
-    int total_size = 3 + (line_size * screen.height);
 
     screen.frames = (Buffer*)malloc(sizeof(Buffer) * num_frames);
 
     for (int i = 0; i < num_frames; i++){
-        screen.frames[i].c = (char*)malloc(total_size);
-        clear_frame_buf(&screen.frames[i]);
-        screen.frames[i].len = total_size;
+        screen.frames[i].c = (char*)malloc(BUF_SIZE);
+        screen.frames[i].len = BUF_SIZE;
+        screen.frames[i].used = 0;
         screen.frames[i].state = RENDER;
     }
 
-    screen.start_time = get_ms();
+    screen.running = true;
+}
+
+void draw_blank(){
+    char* buf = (char*)malloc(screen.width * screen.height);
+    memset(buf, ' ', screen.width * screen.height);
+    write(STDOUT_FILENO, buf, screen.width * screen.height);
+}
+
+void clean_square(Buffer* buf, uint16_t tlc_x, uint16_t tlc_y, uint16_t brc_x, uint16_t brc_y, char c) {
+    size_t total_len = 0;  // This will store the total length of the output string
+    static const char* format = "\x1b[%hu;%huH%c";  // Escape sequence format
+
+    // Calculate how much space we will need in the buffer
+    for (uint16_t y = tlc_y; y <= brc_y; ++y) {
+        for (uint16_t x = tlc_x; x <= brc_x; ++x) {
+            total_len += snprintf(NULL, 0, format, y, x, c);  // Add the length for each formatted string
+        }
+    }
+
+    // Make sure the buffer has enough space for the total string
+    if (total_len > buf->len - buf->used) {
+        return;
+    }
+
+    char* cursor = &buf->c[buf->used];
+
+    for (uint16_t y = tlc_y; y <= brc_y; ++y) {
+        for (uint16_t x = tlc_x; x <= brc_x; ++x) {
+            cursor += snprintf(cursor, buf->len - (cursor - buf->c), format, y, x, c);
+        }
+    }
+
+    // Update the buffer used size
+    buf->used += total_len;
+}
+
+
+static inline void write_to_terminal(Buffer* buf) {
+    write(STDOUT_FILENO, buf->c, buf->used);
+}
+
+static inline void draw_pixel(Buffer* buf, uint16_t x, uint16_t y, char c){
+    uint16_t len = snprintf(&buf->c[buf->used], buf->len - buf-> used, "\x1b[%hu;%huH%c", y, x, c);
+    buf->used += len;
 }
 
 static inline void free_screen(){

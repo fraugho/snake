@@ -76,8 +76,7 @@ void snake_move(Snake* snake, int key) {
 }
 
 static uint8_t y_toggle = 1;
-void
-move_head(Snake* snake){
+void move_head(Snake* snake){
 
     ((int*)snake->x->data)[0] += snake->vx;
     ((int*)snake->y->data)[0] += snake->vy * y_toggle;
@@ -86,7 +85,7 @@ move_head(Snake* snake){
     if (((int*)snake->x->data)[0] < 0){
         ((int*)snake->x->data)[0] = screen.width - 1;
     }
-    if (((int*)snake->x->data)[0] == screen.width){
+    if (((int*)snake->x->data)[0] > screen.width){
         ((int*)snake->x->data)[0] = 0;
     }
     if (((int*)snake->y->data)[0] < 0){
@@ -97,7 +96,7 @@ move_head(Snake* snake){
     }
 }
 
-void move_snake(char* frame, Snake* snake) {
+void move_snake(Snake* snake) {
     if (snake->apple_x == ((int*)snake->x->data)[0]){
         if (snake->apple_y == ((int*)snake->y->data)[0]){
             int num = 0;
@@ -137,15 +136,21 @@ void move_snake(char* frame, Snake* snake) {
 }
 
 // Draw snake
-void snake_render(char* frame, const Snake snake) {
-    for(int i = 0; i < snake.size; ++i) {
-        draw_pixel(((int*)snake.x->data)[i], ((int*)snake.y->data)[i], '#', frame);
+void snake_render(Buffer* buf, const Snake* snake) {
+    for(int i = 0; i < snake->size; ++i) {
+        draw_pixel(buf, ((int*)snake->x->data)[i], ((int*)snake->y->data)[i], '#');
     }
 }
 
-void apple_render(char* frame, const Snake snake) {
+void snake_clean(Buffer* buf, const Snake* snake) {
+    for(int i = 0; i < snake->size; ++i) {
+        draw_pixel(buf, ((int*)snake->x->data)[i], ((int*)snake->y->data)[i], ' ');
+    }
+}
+
+void apple_render(Buffer* buf, const Snake* snake) {
     int center_y = screen.height / 2;
-    draw_pixel(snake.apple_x, snake.apple_y, '*', frame);
+    draw_pixel(buf, snake->apple_x, snake->apple_y, '*');
 }
 
 void free_snake(Snake* snake){
