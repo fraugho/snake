@@ -10,7 +10,8 @@
 #include <sys/ioctl.h>
 
 bool debug = false;
-struct termios og_termios;
+int num_frames = 10;
+const size_t BUF_SIZE = 8000;
 
 /* Terminal handling */
 void die(const char *c) {
@@ -53,6 +54,9 @@ int get_window_size(uint16_t *rows, uint16_t *cols) {
     }
 }
 
+
+struct termios og_termios;
+
 void disable_raw_mode() {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &og_termios) == -1)
         die("tcsetattr");
@@ -74,5 +78,6 @@ void enable_raw_mode() {
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
         die("tcsetattr");
 }
+
 
 #endif
