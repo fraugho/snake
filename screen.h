@@ -1,7 +1,6 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
-#include <termios.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -13,17 +12,14 @@
 #include "buffer.h"
 
 typedef struct Screen {
-    struct termios og_termios;
     Buffer* frames;
     uint16_t width, height;
-    bool running;
 } Screen;
 
 /* Global state */
 struct Screen screen;
 int num_frames = 10;
 const size_t BUF_SIZE = 8000;
-
 
 void screen_init() {
     if (get_window_size(&screen.height, &screen.width) == -1){
@@ -33,10 +29,9 @@ void screen_init() {
     screen.height -= debug;
 
     // Hide cursor
-    write(STDOUT_FILENO, "\x1b[?25l", 6); 
+    write(STDOUT_FILENO, "\x1b[?25l", 6);
 
-    // Initialize both buffers
-
+    // Initialize buffers
     screen.frames = (Buffer*)malloc(sizeof(Buffer) * num_frames);
 
     for (int i = 0; i < num_frames; i++){
@@ -45,8 +40,6 @@ void screen_init() {
         screen.frames[i].used = 0;
         screen.frames[i].state = RENDER;
     }
-
-    screen.running = true;
 }
 
 void draw_blank(){

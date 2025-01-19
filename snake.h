@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include <timing.h>
-#include <screen.h>
-#include <init.h>
-#include <vec.h>
+#include "timing.h"
+#include "screen.h"
+#include "init.h"
+#include "vec.h"
 
 const uint8_t INIT_SIZE = 5;
 

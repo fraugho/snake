@@ -2,8 +2,6 @@
 /* Standard includes */
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -26,41 +24,14 @@ bool RUNNING = true;
 
 int io_index = 0;
 int render_index = 0;
-int clean_index = 0;
 
 //global snake
 Snake snake;
-
-/* Buffer operations */
-#define BUFFER_INIT {NULL, 0}
-
-void disable_raw_mode() {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &screen.og_termios) == -1)
-        die("tcsetattr");
-}
-
-void enable_raw_mode() {
-    if (tcgetattr(STDIN_FILENO, &screen.og_termios) == -1)
-        die("tcgetattr");
-    atexit(disable_raw_mode);
-
-    struct termios raw = screen.og_termios;
-    raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
-    raw.c_oflag &= ~(OPOST);
-    raw.c_cflag |= (CS8);
-    raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
-    raw.c_cc[VMIN] = 0;
-    raw.c_cc[VTIME] = 1;  // Read timeout in deciseconds
-
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-        die("tcsetattr");
-}
 
 int64_t rps = 0;
 int64_t main_start = 0;
 
 /* Writing */
-// In thread_write():
 void* thread_write() {
     int64_t start = get_ns();
     main_start = start;
@@ -71,6 +42,7 @@ void* thread_write() {
             }
             screen.frames[io_index].used = 0;
             screen.frames[io_index].state = RENDER;
+
             io_index = (io_index + 1) % num_frames;
 
             int64_t current = get_ns();
@@ -127,7 +99,6 @@ void* thread_render() {
                 }
             }
 
-
             screen.frames[render_index].state = IO;
             render_index = (render_index + 1) % num_frames;
 
@@ -138,6 +109,20 @@ void* thread_render() {
         }
     }
     return NULL;
+}
+
+void print_timings(){
+    printf("\n\r\x1b[K");
+    printf("Performance Stats:\n\x1b[K\r");
+    if (times > 0) {
+        double avg_time = total / (double)times;
+        printf("Average frame time: %.2f ns (%.2f FPS)\n\x1b[K\r",
+               avg_time, ns_to_fps(avg_time));
+        printf("Best frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
+               min_time, ns_to_fps(min_time));
+        printf("Worst frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
+               max_time, ns_to_fps(max_time));
+    }
 }
 
 /* Main entry point */
@@ -157,7 +142,6 @@ int main() {
     while (last_key != CTRL_KEY('q')) {
         last_key = editor_read_key();
     }
-    int64_t elasped = get_ns();
 
     RUNNING = false;
 
@@ -165,19 +149,7 @@ int main() {
         pthread_join(threads[i], NULL);
     }
 
-    printf("\n\r\x1b[K");
-    printf("Performance Stats:\n\x1b[K\r");
-
-    if (times > 0) {
-        double avg_time = total / (double)times;
-        //avg_time = (elasped - main_start) / (double)times;
-        printf("Average frame time: %.2f ns (%.2f FPS)\n\x1b[K\r",
-               avg_time, ns_to_fps(avg_time));
-        printf("Best frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
-               min_time, ns_to_fps(min_time));
-        printf("Worst frame time: %lld ns (%.2f FPS)\n\x1b[K\r", 
-               max_time, ns_to_fps(max_time));
-    }
+    print_timings();
 
     disable_raw_mode();
     free_screen();
