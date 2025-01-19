@@ -14,7 +14,6 @@
 #include "init.h"
 #include "input.h"
 
-
 int times = 0;
 int64_t total = 0;
 int64_t min_time = INT64_MAX;
@@ -27,7 +26,14 @@ bool RUNNING = true;
 
 int remaining_threads = 0;
 
-void* thread_render();
+void render();
+
+void* thread_render(){
+    while(RUNNING){
+        render();
+    }
+    return NULL;
+}
 
 /* Writing */
 void* thread_write() {
@@ -87,7 +93,6 @@ void engine_init(){
 
     while (last_key != CTRL_KEY('q')) {
         last_key = editor_read_key();
-        //write(STDOUT_FILENO, "\x1b[0;0H$", 7);
     }
 
     RUNNING = false;
@@ -101,4 +106,3 @@ void engine_init(){
 }
 
 #endif
-
