@@ -10,13 +10,18 @@
 #include "timing.h"
 #include "buffer.h"
 
-typedef struct Screen {
+typedef struct Point{
+    int16_t x;
+    int16_t y;
+} Point;
+
+typedef struct Screen{
     Buffer* frames;
     uint16_t width, height;
 } Screen;
 
 /* Global state */
-struct Screen screen;
+Screen screen;
 
 #define RENDER 1 << 1
 #define IO 1 << 2
@@ -50,13 +55,13 @@ void screen_init() {
     }
 }
 
-void clean_square(Buffer* buf, uint16_t tlc_x, uint16_t tlc_y, uint16_t brc_x, uint16_t brc_y, char c) {
+void clean_square(Buffer* buf, Point TopLeft, Point BottomRight, char c) {
     size_t total_len = 0;  // This will store the total length of the output string
-    static const char* format = "\x1b[%hu;%huH%c";  // Escape sequence format
+    static const char* format = "\x1b[%hd;%hdH%c";  // Escape sequence format
 
     // Calculate how much space we will need in the buffer
-    for (uint16_t y = tlc_y; y <= brc_y; ++y) {
-        for (uint16_t x = tlc_x; x <= brc_x; ++x) {
+    for (uint16_t y = TopLeft.y; y <= BottomRight.y; ++y) {
+        for (uint16_t x = TopLeft.x; x <= BottomRight.x; ++x) {
             total_len += snprintf(NULL, 0, format, y, x, c);  // Add the length for each formatted string
         }
     }
@@ -68,8 +73,8 @@ void clean_square(Buffer* buf, uint16_t tlc_x, uint16_t tlc_y, uint16_t brc_x, u
 
     char* cursor = &buf->c[buf->used];
 
-    for (uint16_t y = tlc_y; y <= brc_y; ++y) {
-        for (uint16_t x = tlc_x; x <= brc_x; ++x) {
+    for (uint16_t y = TopLeft.y; y <= BottomRight.y; ++y) {
+        for (uint16_t x = TopLeft.x; x <= BottomRight.x; ++x) {
             cursor += snprintf(cursor, buf->len - (cursor - buf->c), format, y, x, c);
         }
     }
@@ -78,13 +83,12 @@ void clean_square(Buffer* buf, uint16_t tlc_x, uint16_t tlc_y, uint16_t brc_x, u
     buf->used += total_len;
 }
 
-
 static inline void write_to_terminal(Buffer* buf) {
     write(STDOUT_FILENO, buf->c, buf->used);
 }
 
-static inline void draw_pixel(Buffer* buf, uint16_t x, uint16_t y, char c){
-    uint16_t len = snprintf(&buf->c[buf->used], buf->len - buf-> used, "\x1b[%hu;%huH%c", y, x, c);
+static inline void draw_pixel(Buffer* buf, Point point, char c){
+    uint16_t len = snprintf(&buf->c[buf->used], buf->len - buf-> used, "\x1b[%hd;%hdH%c", point.y, point.x, c);
     buf->used += len;
 }
 

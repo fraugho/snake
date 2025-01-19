@@ -8,8 +8,6 @@
 //mine
 #include "timing.h"
 #include "screen.h"
-#include "init.h"
-#include "input.h"
 #include "snake.h"
 #include "engine.h"
 
@@ -21,6 +19,7 @@ int64_t main_start = 0;
 
 /* Rendering */
 void* thread_render() {
+    snake_init(&snake);
     int64_t start = get_us();
     static int64_t last_move = 0;
     static int64_t last_render = 0;
@@ -71,6 +70,5 @@ void* thread_render() {
 
 /* Main entry point */
 int main() {
-    snake_init(&snake);
     engine_init();
 }

@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <unistd.h>
 //mine
 #include "timing.h"
 #include "screen.h"
@@ -86,11 +87,12 @@ void engine_init(){
 
     while (last_key != CTRL_KEY('q')) {
         last_key = editor_read_key();
+        //write(STDOUT_FILENO, "\x1b[0;0H$", 7);
     }
 
     RUNNING = false;
 
-    for(int i = 0; i < 3; i++) {
+    for(int i = 0; i < 2; i++) {
         pthread_join(threads[i], NULL);
     }
 
@@ -99,3 +101,4 @@ void engine_init(){
 }
 
 #endif
+
