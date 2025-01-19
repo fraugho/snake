@@ -10,6 +10,8 @@
 #include <sys/ioctl.h>
 
 bool debug = false;
+int num_frames = 10;
+const size_t BUF_SIZE = 8000;
 
 /* Terminal handling */
 void die(const char *c) {
@@ -50,6 +52,31 @@ int get_window_size(uint16_t *rows, uint16_t *cols) {
         *rows = ws.ws_row;
         return 0;
     }
+}
+
+
+struct termios og_termios;
+
+void disable_raw_mode() {
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &og_termios) == -1)
+        die("tcsetattr");
+}
+
+void enable_raw_mode() {
+    if (tcgetattr(STDIN_FILENO, &og_termios) == -1)
+        die("tcgetattr");
+    atexit(disable_raw_mode);
+
+    struct termios raw = og_termios;
+    raw.c_iflag &= ~(IXON | ICRNL | BRKINT | INPCK | ISTRIP);
+    raw.c_oflag &= ~(OPOST);
+    raw.c_cflag |= (CS8);
+    raw.c_lflag &= ~(ECHO | ICANON | ISIG | IEXTEN);
+    raw.c_cc[VMIN] = 0;
+    raw.c_cc[VTIME] = 1;  // Read timeout in deciseconds
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
+        die("tcsetattr");
 }
 
 #endif

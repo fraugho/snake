@@ -5,6 +5,8 @@
 
 #include "init.h"
 
+//ctrl key macro
+#define CTRL_KEY(k) ((k) & 0x1f)
 
 int last_key = 0;
 

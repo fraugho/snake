@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define RENDER 1 << 1
-#define IO 1 << 2
-
 /* Data structures */
 typedef struct Buffer {
     char *c;
