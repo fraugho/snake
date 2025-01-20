@@ -89,11 +89,10 @@ void engine_init(){
 
     remaining_threads += cpu_num - 2;
 
-    while (last_key != CTRL_KEY('q')) {
+    while (RUNNING) {
         last_key = editor_read_key();
     }
 
-    RUNNING = false;
 
     for(int i = 0; i < 2; i++) {
         pthread_join(threads[i], NULL);
@@ -101,6 +100,10 @@ void engine_init(){
 
     free_screen();
     print_perf();
+}
+
+static inline void engine_close(){
+    RUNNING = false;
 }
 
 #endif
