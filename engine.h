@@ -81,12 +81,14 @@ void print_perf(){
 void engine_init(){
     screen_init();
 
-    long cpu_num = sysconf(_SC_NPROCESSORS_ONLN);
-    pthread_t threads[cpu_num];
+    const int BASIC_TASK_TC = 2;
+
+    pthread_t threads[BASIC_TASK_TC];
 
     pthread_create(&threads[0], NULL, thread_render, NULL);
     pthread_create(&threads[1], NULL, thread_write, NULL);
 
+    long cpu_num = sysconf(_SC_NPROCESSORS_ONLN);
     remaining_threads += cpu_num - 2;
 
     while (RUNNING) {
@@ -105,5 +107,4 @@ void engine_init(){
 static inline void engine_close(){
     RUNNING = false;
 }
-
 #endif

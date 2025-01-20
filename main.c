@@ -13,7 +13,7 @@ Snake snake;
 // Constants for intervals
 #define X_RENDER_INTERVAL 50000
 #define Y_RENDER_INTERVAL 100000
-#define MOVE_INTERVAL 100000
+#define MOVE_INTERVAL 10000
 
 void render() {
     static Timer render_timer = {0, X_RENDER_INTERVAL};
