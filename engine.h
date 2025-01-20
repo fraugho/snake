@@ -1,13 +1,7 @@
 #ifndef ENGINE_H
 #define ENGINE_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/ioctl.h>
-#include <string.h>
-#include <stdbool.h>
 #include <pthread.h>
-#include <unistd.h>
 //mine
 #include "timing.h"
 #include "screen.h"
@@ -30,7 +24,11 @@ void render();
 
 void* thread_render(){
     while(RUNNING){
-        render();
+        if (screen.frames[render_index].state == RENDER) {
+            render();
+            screen.frames[render_index].state = IO;
+            render_index = (render_index + 1) % num_frames;
+        }
     }
     return NULL;
 }

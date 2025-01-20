@@ -1,14 +1,7 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-
-#include "timing.h"
 #include "screen.h"
-#include "init.h"
 #include "vec.h"
 
 const uint8_t INIT_SIZE = 5;
