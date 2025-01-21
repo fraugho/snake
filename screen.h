@@ -2,12 +2,9 @@
 #define SCREEN_H
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
 #include <string.h>
 
 #include "init.h"
-#include "timing.h"
 #include "buffer.h"
 
 typedef struct Point{

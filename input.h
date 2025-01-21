@@ -2,6 +2,7 @@
 #define INPUT_H
 
 #include <unistd.h>
+#include <errno.h>
 
 #include "init.h"
 

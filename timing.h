@@ -43,4 +43,18 @@ static inline double ns_to_us(int64_t ns) {
 static inline double ns_to_fps(int64_t ns) {
     return 1000000000.0 / ns;
 }
+
+// Timer structure for reusable interval checking
+typedef struct {
+    int64_t last_time;
+    int64_t interval;
+} Timer;
+
+static inline void reset_timer(Timer* timer, int64_t current_time) {
+    timer->last_time = current_time;
+}
+
+static inline bool is_time_elapsed(const Timer* timer, int64_t current_time) {
+    return (current_time - timer->last_time) >= timer->interval;
+}
 #endif

@@ -1,74 +1,53 @@
 /* Terminator - A simple terminal graphics system */
 /* Standard includes */
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
-#include <pthread.h>
-#include <stdint.h>
 //mine
 #include "timing.h"
-#include "screen.h"
 #include "snake.h"
 #include "engine.h"
+#include "input.h"
 
 //global snake
 Snake snake;
 
-int64_t rps = 0;
-int64_t main_start = 0;
+// Constants for intervals
+#define X_RENDER_INTERVAL 50000
+#define Y_RENDER_INTERVAL 100000
+#define MOVE_INTERVAL 10000
 
-/* Rendering */
-void* thread_render() {
-    snake_init(&snake);
-    int64_t start = get_us();
-    static int64_t last_move = 0;
-    static int64_t last_render = 0;
-    const int64_t X_RENDER_INTERVAL = 50000;
-    const int64_t Y_RENDER_INTERVAL = 100000;
-    const int64_t MOVE_INTERVAL = 100000;
-    while(RUNNING) {
-        if (screen.frames[render_index].state == RENDER) {
-            int64_t current_time = get_us();
+void render() {
+    static Timer render_timer = {0, X_RENDER_INTERVAL};
+    static Timer move_timer = {0, MOVE_INTERVAL};
 
-            if (y_move){
-                if (current_time - last_render > Y_RENDER_INTERVAL) {
-                    snake_clean(&screen.frames[render_index], &snake);
-                    move_snake(&snake);
-                    last_render = get_us();
-                    if (current_time - last_move > MOVE_INTERVAL) {
-                        snake_move(&snake, last_key);
-                        last_move = get_us();
-                    }
-                    snake_render(&screen.frames[render_index], &snake);
-                    apple_render(&screen.frames[render_index], &snake);
-                }
-            } else {
-                if (current_time - last_render > X_RENDER_INTERVAL) {
-                    snake_clean(&screen.frames[render_index], &snake);
-                    move_snake(&snake);
-                    last_render = get_us();
-                    if (current_time - last_move > MOVE_INTERVAL) {
-                        snake_move(&snake, last_key);
-                        last_move = get_us();
-                    }
-                    snake_render(&screen.frames[render_index], &snake);
-                    apple_render(&screen.frames[render_index], &snake);
-                }
-            }
+    static int64_t last_key_check = 0;
+    int64_t current_time = get_us();
 
-            screen.frames[render_index].state = IO;
-            render_index = (render_index + 1) % num_frames;
+    // Adjust render interval dynamically because of terminal cell width to height ratio
+    render_timer.interval = y_move ? Y_RENDER_INTERVAL : X_RENDER_INTERVAL;
 
-            int64_t end = get_us();
-            rps = time_diff_us(start, end);
-
-            start = get_us();
-        }
+    // Update logic
+    if (is_time_elapsed(&move_timer, current_time)) {
+        snake_move(&snake, last_key);  // Move snake based on input
+        reset_timer(&move_timer, current_time);
     }
-    return NULL;
+
+    // Render
+    if (is_time_elapsed(&render_timer, current_time)) {
+        snake_clean(&screen.frames[render_index], &snake);
+        move_snake(&snake);
+        snake_render(&screen.frames[render_index], &snake);
+        apple_render(&screen.frames[render_index], &snake);
+        reset_timer(&render_timer, current_time);
+    }
+
+    // Handle user input
+    if (get_key() == CTRL_KEY('q')) {
+        engine_close();
+    }
 }
 
 /* Main entry point */
 int main() {
+    snake_init(&snake);
     engine_init();
 }

@@ -1,14 +1,8 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-
-#include "timing.h"
 #include "screen.h"
-#include "init.h"
+#include "engine.h"
 #include "vec.h"
 
 const uint8_t INIT_SIZE = 5;
@@ -30,7 +24,7 @@ void snake_init(Snake* snake){
     snake->vy = 0;
 
     snake->x = vec_create(INIT_SIZE, sizeof(int16_t));
-    for(int i = 0; i < INIT_SIZE; ++i){
+    for(int i = INIT_SIZE; i > 0; --i){
         int16_t num = i;
         vec_append(snake->x, &num);
     }
@@ -97,22 +91,32 @@ void move_head(Snake* snake){
 }
 
 static inline void apple_logic(Snake* snake){
-    if (snake->apple_x == ((int16_t*)snake->x->data)[0]){
-        if (snake->apple_y == ((int16_t*)snake->y->data)[0]){
-            int16_t num = 0;
-            //adds body cell
-            vec_append(snake->x, &num);
-            vec_append(snake->y, &num);
-            ++snake->size;
+    if (snake->apple_x == ((int16_t*)snake->x->data)[0] &&
+        snake->apple_y == ((int16_t*)snake->y->data)[0]){
 
-            //changes apple position
-            snake->apple_x = rand() % screen.width;
-            snake->apple_y = rand() % screen.height;
+        static int16_t num = 0;
+        //adds body cell
+        vec_append(snake->x, &num);
+        vec_append(snake->y, &num);
+        ++snake->size;
+
+        //changes apple position
+        snake->apple_x = rand() % screen.width;
+        snake->apple_y = rand() % screen.height;
+    }
+}
+
+static inline void collision_logic(Snake* snake){
+    for(int i = 1; i < snake->size; ++i){
+        if (((int16_t*)snake->x->data)[0] == ((int16_t*)snake->x->data)[i] &&
+            ((int16_t*)snake->y->data)[0] == ((int16_t*)snake->y->data)[i]){
+            engine_close();
         }
     }
 }
 
 void move_snake(Snake* snake) {
+    collision_logic(snake);
     apple_logic(snake);
 
     // Store old head position
