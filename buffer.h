@@ -2,6 +2,7 @@
 #define BUFFER_H
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* Data structures */
 typedef struct Buffer {

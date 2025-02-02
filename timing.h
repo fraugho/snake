@@ -1,6 +1,7 @@
 #ifndef TIMING_H
 #define TIMING_H
 #include <time.h>
+#include <stdint.h>
 
 /* Timing utilities */
 static inline int64_t get_ms() {

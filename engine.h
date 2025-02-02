@@ -2,6 +2,7 @@
 #define ENGINE_H
 
 #include <pthread.h>
+#include <time.h>
 //mine
 #include "timing.h"
 #include "screen.h"

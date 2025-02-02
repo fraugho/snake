@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #include "init.h"
 
@@ -13,7 +14,7 @@ int last_key = 0;
 
 enum SpecialKeys {
     ESCAPE_KEY = 27,
-    RETURN_KEY = 13,  // Change to 10 for Linux
+    RETURN_KEY = 10,  // Change to 13 for macos
     BACKSPACE = 127,
     TIMEOUT_KEY = 0,
     LEFT_ARROW = 1000,
