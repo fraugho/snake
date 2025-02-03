@@ -1,6 +1,7 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
+#include <time.h>
 #include "screen.h"
 #include "engine.h"
 #include "vec.h"
