@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <time.h>
+#include <stdint.h>
 
 bool debug = false;
 int num_frames = 10;
