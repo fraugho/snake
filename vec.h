@@ -65,8 +65,8 @@ Vec* vec_create(size_t initial_capacity, size_t type_size) {
 void vec_swap(size_t idx_1, size_t idx_2, Vec* vec){
     void* temp = malloc(vec->type_size);
 
-    memcpy(temp, &vec->data[idx_1], vec->type_size);
-    memcpy(&vec->data[idx_1], &vec->data[idx_2], vec->type_size);
+    memcpy(temp, &vec->data[idx_1 * vec->type_size], vec->type_size);
+    memcpy(&vec->data[idx_1], &vec->data[idx_2 * vec->type_size], vec->type_size);
     memcpy(&vec->data[idx_2], temp, vec->type_size);
 
     free(temp);
@@ -84,5 +84,6 @@ void vec_swap_delete(Vec *vec, size_t index){
 
 void free_vec(Vec* vec){
     free(vec->data);
+    free(vec);
 }
 #endif

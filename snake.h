@@ -117,9 +117,6 @@ static inline void collision_logic(Snake* snake){
 }
 
 void move_snake(Snake* snake) {
-    collision_logic(snake);
-    apple_logic(snake);
-
     // Store old head position
     int16_t prev_x = ((int16_t*)snake->x->data)[0];
     int16_t prev_y = ((int16_t*)snake->y->data)[0];
@@ -137,6 +134,9 @@ void move_snake(Snake* snake) {
         ((int16_t*)snake->y->data)[i] = prev_y;
         prev_y = temp;
     }
+
+    collision_logic(snake);
+    apple_logic(snake);
 }
 
 // Draw snake

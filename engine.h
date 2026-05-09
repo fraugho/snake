@@ -23,7 +23,7 @@ int remaining_threads = 0;
 
 void render();
 
-void* thread_render(){
+void* thread_render(void* args){
   while(RUNNING){
     if (screen.frames[render_index].state == RENDER) {
       render();
@@ -35,7 +35,7 @@ void* thread_render(){
 }
 
 /* Writing */
-void* thread_write() {
+void* thread_write(void* args){
   long start = get_ns();
   while(RUNNING){
     if (screen.frames[io_index].state == IO){
